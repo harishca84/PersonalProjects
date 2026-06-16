@@ -58,3 +58,29 @@ in your environment for anything beyond local dev.
 
 All `/api` routes except `/api/auth/*` require an authenticated session,
 and group-scoped routes require the caller to be a member of that group.
+
+## Deploying to Render
+
+A Render Blueprint (`../render.yaml` at the repo root) defines two services:
+
+- `expensify-api`: Node web service running the Express API
+- `expensify-client`: static site serving the Vite build, configured with
+  `VITE_API_URL` pointing at the API service
+
+To deploy:
+
+1. Push this repo to GitHub (already done if you're reading this from the repo).
+2. In the Render dashboard, **New > Blueprint**, connect the GitHub repo, and
+   Render will pick up `render.yaml` and create both services.
+3. After the first deploy, the API and client get real `*.onrender.com`
+   URLs. Update the `CLIENT_ORIGIN` env var on `expensify-api` and the
+   `VITE_API_URL` env var on `expensify-client` to match the actual URLs
+   Render assigned (the blueprint guesses the default name-based URLs, which
+   is usually right, but double-check), then trigger a redeploy.
+
+**Data persistence caveat:** the API stores data in a SQLite file on local
+disk. Render's free web service plan has an ephemeral filesystem — the
+database resets on every deploy and on restarts after the service spins
+down from inactivity. For data that needs to persist, upgrade the API
+service to a paid plan with a persistent disk mounted at `server/data`, or
+swap SQLite for a hosted Postgres database.

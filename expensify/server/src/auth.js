@@ -19,16 +19,19 @@ function signToken(user) {
   });
 }
 
+const isProd = process.env.NODE_ENV === 'production';
+
 function setAuthCookie(res, token) {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: isProd ? 'none' : 'lax',
+    secure: isProd,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
 
 function clearAuthCookie(res) {
-  res.clearCookie(COOKIE_NAME);
+  res.clearCookie(COOKIE_NAME, { sameSite: isProd ? 'none' : 'lax', secure: isProd });
 }
 
 function requireAuth(req, res, next) {
