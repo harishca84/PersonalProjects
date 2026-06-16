@@ -1,23 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import ExpenseForm from './ExpenseForm';
+import SettleUpForm from './SettleUpForm';
 
-export default function GroupDetail({ groupId, allPeople, onBack }) {
+export default function GroupDetail({ groupId, currentUser, onBack }) {
   const [group, setGroup] = useState(null);
   const [expenses, setExpenses] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [balances, setBalances] = useState({ netBalances: [], settlements: [] });
   const [error, setError] = useState('');
-  const [memberToAdd, setMemberToAdd] = useState('');
+  const [memberEmail, setMemberEmail] = useState('');
+  const [editingExpenseId, setEditingExpenseId] = useState(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [g, exp, bal] = await Promise.all([
+      const [g, exp, pay, bal] = await Promise.all([
         api.getGroup(groupId),
         api.getExpenses(groupId),
+        api.getPayments(groupId),
         api.getBalances(groupId),
       ]);
       setGroup(g);
       setExpenses(exp);
+      setPayments(pay);
       setBalances(bal);
     } catch (err) {
       setError(err.message);
@@ -33,19 +38,38 @@ export default function GroupDetail({ groupId, allPeople, onBack }) {
     await refresh();
   }
 
+  async function handleUpdateExpense(expense) {
+    await api.updateExpense(editingExpenseId, expense);
+    setEditingExpenseId(null);
+    await refresh();
+  }
+
   async function handleDeleteExpense(id) {
     await api.deleteExpense(id);
     await refresh();
   }
 
-  async function handleAddMember(personId) {
-    await api.addMember(groupId, personId);
+  async function handleSettle(payment) {
+    await api.createPayment(groupId, payment);
     await refresh();
+  }
+
+  async function handleAddMember(e) {
+    e.preventDefault();
+    setError('');
+    if (!memberEmail.trim()) return;
+    try {
+      await api.addMember(groupId, memberEmail.trim());
+      setMemberEmail('');
+      await refresh();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   if (!group) return <div className="page">Loading...</div>;
 
-  const nonMembers = allPeople.filter((p) => !group.members.some((m) => m.id === p.id));
+  const editingExpense = expenses.find((e) => e.id === editingExpenseId);
 
   return (
     <div className="page">
@@ -59,40 +83,27 @@ export default function GroupDetail({ groupId, allPeople, onBack }) {
         <h2>Members</h2>
         <ul className="people-list">
           {group.members.map((m) => (
-            <li key={m.id}>{m.name}</li>
+            <li key={m.id}>
+              {m.name} <span className="muted">({m.email})</span>
+            </li>
           ))}
         </ul>
-        {nonMembers.length > 0 && (
-          <div className="inline-form">
-            <select value={memberToAdd} onChange={(e) => setMemberToAdd(e.target.value)}>
-              <option value="" disabled>
-                Add existing friend...
-              </option>
-              {nonMembers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => {
-                if (memberToAdd) {
-                  handleAddMember(Number(memberToAdd));
-                  setMemberToAdd('');
-                }
-              }}
-            >
-              Add
-            </button>
-          </div>
-        )}
+        <form onSubmit={handleAddMember} className="inline-form">
+          <input
+            type="email"
+            placeholder="Add friend by email"
+            value={memberEmail}
+            onChange={(e) => setMemberEmail(e.target.value)}
+          />
+          <button type="submit">Add</button>
+        </form>
       </section>
 
       <section className="card">
         <h2>Balances</h2>
         <ul className="balances-list">
           {balances.netBalances.map((b) => (
-            <li key={b.personId} className={b.netBalance >= 0 ? 'positive' : 'negative'}>
+            <li key={b.userId} className={b.netBalance >= 0 ? 'positive' : 'negative'}>
               {b.name}: {b.netBalance >= 0 ? '+' : ''}
               {b.netBalance.toFixed(2)}
             </li>
@@ -109,7 +120,34 @@ export default function GroupDetail({ groupId, allPeople, onBack }) {
         </ul>
       </section>
 
-      <ExpenseForm members={group.members} onAddExpense={handleAddExpense} />
+      <SettleUpForm members={group.members} currentUserId={currentUser.id} onSettle={handleSettle} />
+
+      {payments.length > 0 && (
+        <section className="card">
+          <h2>Payment history</h2>
+          <ul className="expense-list">
+            {payments.map((p) => (
+              <li key={p.id}>
+                <div>
+                  {p.fromName} paid {p.toName} ${p.amount.toFixed(2)}
+                  {p.note && <div className="splits">{p.note}</div>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {editingExpense ? (
+        <ExpenseForm
+          members={group.members}
+          initialExpense={editingExpense}
+          onSubmit={handleUpdateExpense}
+          onCancel={() => setEditingExpenseId(null)}
+        />
+      ) : (
+        <ExpenseForm members={group.members} onSubmit={handleAddExpense} />
+      )}
 
       <section className="card">
         <h2>Expenses</h2>
@@ -123,9 +161,14 @@ export default function GroupDetail({ groupId, allPeople, onBack }) {
                   {e.splits.map((s) => `${s.name}: $${s.amount.toFixed(2)}`).join(', ')}
                 </div>
               </div>
-              <button className="link" onClick={() => handleDeleteExpense(e.id)}>
-                Delete
-              </button>
+              <div className="expense-actions">
+                <button className="link" onClick={() => setEditingExpenseId(e.id)}>
+                  Edit
+                </button>
+                <button className="link" onClick={() => handleDeleteExpense(e.id)}>
+                  Delete
+                </button>
+              </div>
             </li>
           ))}
         </ul>

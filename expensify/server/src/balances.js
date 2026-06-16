@@ -7,8 +7,8 @@ function round2(n) {
 function getNetBalances(groupId) {
   const members = db
     .prepare(
-      `SELECT p.id, p.name FROM people p
-       JOIN group_members gm ON gm.person_id = p.id
+      `SELECT u.id, u.name FROM users u
+       JOIN group_members gm ON gm.user_id = u.id
        WHERE gm.group_id = ?`
     )
     .all(groupId);
@@ -17,28 +17,38 @@ function getNetBalances(groupId) {
 
   const paid = db
     .prepare(
-      `SELECT paid_by AS personId, SUM(amount) AS total
+      `SELECT paid_by AS userId, SUM(amount) AS total
        FROM expenses WHERE group_id = ? GROUP BY paid_by`
     )
     .all(groupId);
   for (const row of paid) {
-    net.set(row.personId, (net.get(row.personId) || 0) + row.total);
+    net.set(row.userId, (net.get(row.userId) || 0) + row.total);
   }
 
   const owed = db
     .prepare(
-      `SELECT es.person_id AS personId, SUM(es.share_amount) AS total
+      `SELECT es.user_id AS userId, SUM(es.share_amount) AS total
        FROM expense_splits es
        JOIN expenses e ON e.id = es.expense_id
-       WHERE e.group_id = ? GROUP BY es.person_id`
+       WHERE e.group_id = ? GROUP BY es.user_id`
     )
     .all(groupId);
   for (const row of owed) {
-    net.set(row.personId, (net.get(row.personId) || 0) - row.total);
+    net.set(row.userId, (net.get(row.userId) || 0) - row.total);
+  }
+
+  // A payment from X to Y reduces what X owes (or increases what X is owed)
+  // and reduces what Y is owed (or increases what Y owes).
+  const payments = db
+    .prepare(`SELECT from_user AS fromUser, to_user AS toUser, amount FROM payments WHERE group_id = ?`)
+    .all(groupId);
+  for (const p of payments) {
+    net.set(p.fromUser, (net.get(p.fromUser) || 0) + p.amount);
+    net.set(p.toUser, (net.get(p.toUser) || 0) - p.amount);
   }
 
   return members.map((m) => ({
-    personId: m.id,
+    userId: m.id,
     name: m.name,
     netBalance: round2(net.get(m.id) || 0),
   }));
@@ -48,9 +58,9 @@ function getNetBalances(groupId) {
 function simplifyDebts(netBalances) {
   const creditors = [];
   const debtors = [];
-  for (const { personId, name, netBalance } of netBalances) {
-    if (netBalance > 0.005) creditors.push({ personId, name, amount: netBalance });
-    else if (netBalance < -0.005) debtors.push({ personId, name, amount: -netBalance });
+  for (const { userId, name, netBalance } of netBalances) {
+    if (netBalance > 0.005) creditors.push({ userId, name, amount: netBalance });
+    else if (netBalance < -0.005) debtors.push({ userId, name, amount: -netBalance });
   }
 
   creditors.sort((a, b) => b.amount - a.amount);
@@ -67,9 +77,9 @@ function simplifyDebts(netBalances) {
     if (amount > 0) {
       settlements.push({
         from: debtor.name,
-        fromId: debtor.personId,
+        fromId: debtor.userId,
         to: creditor.name,
-        toId: creditor.personId,
+        toId: creditor.userId,
         amount,
       });
     }

@@ -1,16 +1,26 @@
 import { useState } from 'react';
 
-export default function ExpenseForm({ members, onAddExpense }) {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [paidBy, setPaidBy] = useState(members[0]?.id ?? '');
-  const [splitWith, setSplitWith] = useState(members.map((m) => m.id));
+function buildEqualSplits(total, memberIds) {
+  const share = Math.round((total / memberIds.length) * 100) / 100;
+  return memberIds.map((userId, idx) => ({
+    userId,
+    amount:
+      idx === memberIds.length - 1 ? Math.round((total - share * (memberIds.length - 1)) * 100) / 100 : share,
+  }));
+}
+
+export default function ExpenseForm({ members, initialExpense, onSubmit, onCancel }) {
+  const isEditing = Boolean(initialExpense);
+  const [description, setDescription] = useState(initialExpense?.description ?? '');
+  const [amount, setAmount] = useState(initialExpense?.amount?.toString() ?? '');
+  const [paidBy, setPaidBy] = useState(initialExpense?.paid_by ?? members[0]?.id ?? '');
+  const [splitWith, setSplitWith] = useState(
+    initialExpense?.splits?.map((s) => s.userId) ?? members.map((m) => m.id)
+  );
   const [error, setError] = useState('');
 
-  function toggleSplit(personId) {
-    setSplitWith((prev) =>
-      prev.includes(personId) ? prev.filter((id) => id !== personId) : [...prev, personId]
-    );
+  function toggleSplit(userId) {
+    setSplitWith((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
   }
 
   async function handleSubmit(e) {
@@ -27,17 +37,14 @@ export default function ExpenseForm({ members, onAddExpense }) {
       return;
     }
 
-    const share = Math.round((total / splitWith.length) * 100) / 100;
-    const splits = splitWith.map((personId, idx) => ({
-      personId,
-      // give any rounding remainder to the last split
-      amount: idx === splitWith.length - 1 ? Math.round((total - share * (splitWith.length - 1)) * 100) / 100 : share,
-    }));
+    const splits = buildEqualSplits(total, splitWith);
 
     try {
-      await onAddExpense({ description: description.trim(), amount: total, paidBy: Number(paidBy), splits });
-      setDescription('');
-      setAmount('');
+      await onSubmit({ description: description.trim(), amount: total, paidBy: Number(paidBy), splits });
+      if (!isEditing) {
+        setDescription('');
+        setAmount('');
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -45,7 +52,7 @@ export default function ExpenseForm({ members, onAddExpense }) {
 
   return (
     <form onSubmit={handleSubmit} className="card">
-      <h2>Add expense</h2>
+      <h2>{isEditing ? 'Edit expense' : 'Add expense'}</h2>
       <input
         placeholder="Description (e.g. Dinner)"
         value={description}
@@ -78,7 +85,14 @@ export default function ExpenseForm({ members, onAddExpense }) {
           </label>
         ))}
       </div>
-      <button type="submit">Add expense</button>
+      <div className="form-actions">
+        <button type="submit">{isEditing ? 'Save changes' : 'Add expense'}</button>
+        {isEditing && (
+          <button type="button" className="link" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </div>
       {error && <p className="error">{error}</p>}
     </form>
   );

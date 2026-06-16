@@ -1,37 +1,54 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
+import AuthPage from './components/AuthPage';
 import GroupList from './components/GroupList';
 import GroupDetail from './components/GroupDetail';
 import './App.css';
 
 function App() {
-  const [people, setPeople] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [error, setError] = useState('');
 
-  const refresh = useCallback(async () => {
+  useEffect(() => {
+    api
+      .me()
+      .then(setCurrentUser)
+      .catch(() => setCurrentUser(null))
+      .finally(() => setCheckingSession(false));
+  }, []);
+
+  const refreshGroups = useCallback(async () => {
     try {
-      const [p, g] = await Promise.all([api.getPeople(), api.getGroups()]);
-      setPeople(p);
-      setGroups(g);
+      setGroups(await api.getGroups());
     } catch (err) {
       setError(err.message);
     }
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (currentUser) refreshGroups();
+  }, [currentUser, refreshGroups]);
 
-  async function handleCreatePerson(name) {
-    await api.createPerson(name);
-    await refresh();
+  async function handleCreateGroup(name) {
+    const group = await api.createGroup(name, []);
+    await refreshGroups();
+    return group;
   }
 
-  async function handleCreateGroup(name, memberIds) {
-    await api.createGroup(name, memberIds);
-    await refresh();
+  async function handleLogout() {
+    await api.logout();
+    setCurrentUser(null);
+    setSelectedGroupId(null);
+    setGroups([]);
+  }
+
+  if (checkingSession) return null;
+
+  if (!currentUser) {
+    return <AuthPage onAuthenticated={setCurrentUser} />;
   }
 
   if (error) return <div className="page error">{error}</div>;
@@ -40,10 +57,10 @@ function App() {
     return (
       <GroupDetail
         groupId={selectedGroupId}
-        allPeople={people}
+        currentUser={currentUser}
         onBack={() => {
           setSelectedGroupId(null);
-          refresh();
+          refreshGroups();
         }}
       />
     );
@@ -52,10 +69,10 @@ function App() {
   return (
     <GroupList
       groups={groups}
-      people={people}
-      onCreatePerson={handleCreatePerson}
+      currentUser={currentUser}
       onCreateGroup={handleCreateGroup}
       onSelectGroup={setSelectedGroupId}
+      onLogout={handleLogout}
     />
   );
 }
