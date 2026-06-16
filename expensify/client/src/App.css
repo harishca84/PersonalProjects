@@ -1,0 +1,107 @@
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+  font-family: system-ui, sans-serif;
+}
+
+h1 {
+  margin-bottom: 1rem;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.card input,
+.card select {
+  display: block;
+  width: 100%;
+  margin: 0.4rem 0;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+.card button[type='submit'],
+.card button:not(.link) {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.inline-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.inline-form input,
+.inline-form select {
+  flex: 1;
+}
+
+.checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.checkbox-list label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.people-list,
+.group-list,
+.balances-list,
+.expense-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+
+.group-list li,
+.expense-list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.expense-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.splits {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.balances-list li.positive {
+  color: #1a7d36;
+}
+
+.balances-list li.negative {
+  color: #c0392b;
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1rem;
+  text-decoration: underline;
+}
+
+.error {
+  color: #c0392b;
+}
