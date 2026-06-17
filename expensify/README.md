@@ -59,28 +59,50 @@ in your environment for anything beyond local dev.
 All `/api` routes except `/api/auth/*` require an authenticated session,
 and group-scoped routes require the caller to be a member of that group.
 
-## Deploying to Render
+## Deploying to Vercel + Supabase
 
-A Render Blueprint (`../render.yaml` at the repo root) defines two services:
+The API and frontend are deployed as two separate Vercel projects, both
+backed by the same Supabase Postgres database.
 
-- `expensify-api`: Node web service running the Express API
-- `expensify-client`: static site serving the Vite build, configured with
-  `VITE_API_URL` pointing at the API service
+### Prerequisites
 
-To deploy:
+- A [Supabase](https://supabase.com) project — grab the Postgres connection
+  string from **Project Settings → Database → URI**.
+- A [Vercel](https://vercel.com) account connected to this GitHub repo.
 
-1. Push this repo to GitHub (already done if you're reading this from the repo).
-2. In the Render dashboard, **New > Blueprint**, connect the GitHub repo, and
-   Render will pick up `render.yaml` and create both services.
-3. After the first deploy, the API and client get real `*.onrender.com`
-   URLs. Update the `CLIENT_ORIGIN` env var on `expensify-api` and the
-   `VITE_API_URL` env var on `expensify-client` to match the actual URLs
-   Render assigned (the blueprint guesses the default name-based URLs, which
-   is usually right, but double-check), then trigger a redeploy.
+### 1 — Deploy the API
 
-**Data persistence caveat:** the API stores data in a SQLite file on local
-disk. Render's free web service plan has an ephemeral filesystem — the
-database resets on every deploy and on restarts after the service spins
-down from inactivity. For data that needs to persist, upgrade the API
-service to a paid plan with a persistent disk mounted at `server/data`, or
-swap SQLite for a hosted Postgres database.
+1. In Vercel: **Add New Project**, import `harishca84/PersonalProjects`.
+2. Set **Root Directory** to `expensify/server`.
+3. Vercel auto-detects the `vercel.json` and treats `api/index.js` as the
+   serverless entry point (no build command needed).
+4. Add these environment variables:
+   | Key | Value |
+   |---|---|
+   | `DATABASE_URL` | your Supabase connection string |
+   | `JWT_SECRET` | any long random string |
+   | `CLIENT_ORIGIN` | *(leave blank for now, fill in after step 2)* |
+5. Deploy. Note the URL Vercel assigns (e.g. `expensify-server.vercel.app`).
+
+### 2 — Deploy the frontend
+
+1. **Add New Project** again, same repo.
+2. Set **Root Directory** to `expensify/client`.
+3. Vercel auto-detects Vite. Set **Build Command** to `npm run build` and
+   **Output Directory** to `dist` (usually pre-filled).
+4. Add this environment variable:
+   | Key | Value |
+   |---|---|
+   | `VITE_API_URL` | the API URL from step 1 (e.g. `https://expensify-server.vercel.app`) |
+5. Deploy. Note the frontend URL (e.g. `expensify-client.vercel.app`).
+
+### 3 — Wire the two together
+
+Go back to the **API project** in Vercel, set `CLIENT_ORIGIN` to the
+frontend URL from step 2, then **Redeploy** the API. Both services now
+point at each other and share the Supabase database.
+
+> **Note:** the Expensify API Express app is deployed as a single Vercel
+> serverless function. Vercel's free Hobby plan allows up to **10 seconds**
+> per invocation — more than enough for all routes here. Schema migrations
+> run automatically on the first cold start against the Supabase DB.
