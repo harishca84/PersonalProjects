@@ -1,50 +1,47 @@
-const db = require('./db');
+const { query } = require('./db');
 
 function round2(n) {
-  return Math.round(n * 100) / 100;
+  return Math.round(Number(n) * 100) / 100;
 }
 
-function getNetBalances(groupId) {
-  const members = db
-    .prepare(
-      `SELECT u.id, u.name FROM users u
-       JOIN group_members gm ON gm.user_id = u.id
-       WHERE gm.group_id = ?`
-    )
-    .all(groupId);
+async function getNetBalances(groupId) {
+  const members = await query(
+    `SELECT u.id, u.name FROM users u
+     JOIN group_members gm ON gm.user_id = u.id
+     WHERE gm.group_id = $1`,
+    [groupId]
+  );
 
   const net = new Map(members.map((m) => [m.id, 0]));
 
-  const paid = db
-    .prepare(
-      `SELECT paid_by AS userId, SUM(amount) AS total
-       FROM expenses WHERE group_id = ? GROUP BY paid_by`
-    )
-    .all(groupId);
+  const paid = await query(
+    `SELECT paid_by AS "userId", SUM(amount) AS total
+     FROM expenses WHERE group_id = $1 GROUP BY paid_by`,
+    [groupId]
+  );
   for (const row of paid) {
-    net.set(row.userId, (net.get(row.userId) || 0) + row.total);
+    net.set(row.userId, (net.get(row.userId) || 0) + Number(row.total));
   }
 
-  const owed = db
-    .prepare(
-      `SELECT es.user_id AS userId, SUM(es.share_amount) AS total
-       FROM expense_splits es
-       JOIN expenses e ON e.id = es.expense_id
-       WHERE e.group_id = ? GROUP BY es.user_id`
-    )
-    .all(groupId);
+  const owed = await query(
+    `SELECT es.user_id AS "userId", SUM(es.share_amount) AS total
+     FROM expense_splits es
+     JOIN expenses e ON e.id = es.expense_id
+     WHERE e.group_id = $1 GROUP BY es.user_id`,
+    [groupId]
+  );
   for (const row of owed) {
-    net.set(row.userId, (net.get(row.userId) || 0) - row.total);
+    net.set(row.userId, (net.get(row.userId) || 0) - Number(row.total));
   }
 
-  // A payment from X to Y reduces what X owes (or increases what X is owed)
-  // and reduces what Y is owed (or increases what Y owes).
-  const payments = db
-    .prepare(`SELECT from_user AS fromUser, to_user AS toUser, amount FROM payments WHERE group_id = ?`)
-    .all(groupId);
+  const payments = await query(
+    `SELECT from_user AS "fromUser", to_user AS "toUser", amount
+     FROM payments WHERE group_id = $1`,
+    [groupId]
+  );
   for (const p of payments) {
-    net.set(p.fromUser, (net.get(p.fromUser) || 0) + p.amount);
-    net.set(p.toUser, (net.get(p.toUser) || 0) - p.amount);
+    net.set(p.fromUser, (net.get(p.fromUser) || 0) + Number(p.amount));
+    net.set(p.toUser, (net.get(p.toUser) || 0) - Number(p.amount));
   }
 
   return members.map((m) => ({
@@ -54,7 +51,6 @@ function getNetBalances(groupId) {
   }));
 }
 
-// Greedy settlement: match largest creditor with largest debtor repeatedly.
 function simplifyDebts(netBalances) {
   const creditors = [];
   const debtors = [];
@@ -75,18 +71,11 @@ function simplifyDebts(netBalances) {
     const amount = round2(Math.min(debtor.amount, creditor.amount));
 
     if (amount > 0) {
-      settlements.push({
-        from: debtor.name,
-        fromId: debtor.userId,
-        to: creditor.name,
-        toId: creditor.userId,
-        amount,
-      });
+      settlements.push({ from: debtor.name, fromId: debtor.userId, to: creditor.name, toId: creditor.userId, amount });
     }
 
     debtor.amount = round2(debtor.amount - amount);
     creditor.amount = round2(creditor.amount - amount);
-
     if (debtor.amount <= 0.005) i += 1;
     if (creditor.amount <= 0.005) j += 1;
   }

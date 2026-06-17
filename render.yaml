@@ -13,6 +13,8 @@ services:
         generateValue: true
       - key: CLIENT_ORIGIN
         value: https://expensify-client.onrender.com
+      - key: DATABASE_URL
+        sync: false   # paste your Supabase connection string in Render dashboard
 
   - type: web
     name: expensify-client
