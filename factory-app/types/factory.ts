@@ -1,3 +1,5 @@
+export type Tier = 'starter' | 'standard' | 'pro';
+
 export type JobStatus =
   | 'discovery'
   | 'prd'
@@ -9,10 +11,6 @@ export type JobStatus =
   | 'live'
   | 'failed';
 
-export type StageStatus = 'pending' | 'running' | 'completed' | 'failed' | 'awaiting_approval';
-
-export type Tier = 'starter' | 'standard' | 'pro';
-
 export type StageName =
   | 'discovery'
   | 'prd'
@@ -22,26 +20,26 @@ export type StageName =
   | 'test'
   | 'deploy';
 
+export type StageStatus =
+  | 'pending'
+  | 'running'
+  | 'awaiting_approval'
+  | 'completed'
+  | 'done'
+  | 'failed';
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
 }
 
-export interface JobStage {
-  name: string;
-  status: StageStatus;
-  startedAt?: string;
-  completedAt?: string;
-  error?: string;
-}
-
-export interface TierFeatures {
+export interface TierDefinition {
   name: string;
   price: string;
   description: string;
   features: string[];
-  recommended?: boolean;
+  recommended: boolean;
 }
 
 export interface PRD {
@@ -49,49 +47,26 @@ export interface PRD {
   businessContext: string;
   personas: { name: string; role: string; needs: string[] }[];
   tiers: {
-    starter: TierFeatures;
-    standard: TierFeatures;
-    pro: TierFeatures;
+    starter: TierDefinition;
+    standard: TierDefinition;
+    pro: TierDefinition;
   };
   successMetrics: string[];
 }
 
-export interface ArchComponent {
-  name: string;
-  purpose: string;
-  technology: string;
-}
-
-export interface DataModel {
-  name: string;
-  fields: string[];
-}
-
-export interface ApiEndpoint {
-  method: string;
-  path: string;
-  purpose: string;
-}
-
 export interface Architecture {
   overview: string;
-  components: ArchComponent[];
-  dataModels: DataModel[];
-  apiEndpoints: ApiEndpoint[];
+  components: { name: string; purpose: string; technology: string }[];
+  dataModels: { name: string; fields: string[] }[];
+  apiEndpoints: { method: string; path: string; purpose: string }[];
   integrations: string[];
   deploymentTarget: string;
-}
-
-export interface TechStackComponent {
-  layer: string;
-  technology: string;
-  reason: string;
 }
 
 export interface TechStack {
   name: string;
   reason: string;
-  components: TechStackComponent[];
+  components: { layer: string; technology: string; reason: string }[];
   deployTarget: string;
 }
 
@@ -107,22 +82,37 @@ export interface BuildOutput {
   envVariables: { key: string; description: string }[];
 }
 
+export interface StageState {
+  name: string;
+  status: StageStatus;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+}
+
 export interface Job {
   id: string;
   businessName: string;
   businessType: string;
   ownerName: string;
-  description: string;
+  description?: string;
   status: JobStatus;
-  chosenTier?: Tier;
+  stages: Record<StageName, StageState>;
+
   discoveryChat: ChatMessage[];
   discoverySummary?: string;
+
   prd?: PRD;
+  chosenTier?: Tier;
+
   architecture?: Architecture;
+  archApproved?: boolean;
+
   techStack?: TechStack;
+
   buildOutput?: BuildOutput;
   liveUrl?: string;
-  stages: Record<StageName, JobStage>;
+
   createdAt: string;
   updatedAt: string;
 }
