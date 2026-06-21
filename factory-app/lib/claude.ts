@@ -32,11 +32,13 @@ export async function generate(options: {
     systemInstruction: options.system,
   });
 
-  // Gemini requires alternating user/model turns starting with user
-  const history = options.messages.slice(0, -1).map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
+  // Gemini requires history to start with 'user' role — skip any leading assistant messages
+  const allPrior = options.messages.slice(0, -1).map((m) => ({
+    role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
     parts: [{ text: m.content }],
   }));
+  const firstUserIdx = allPrior.findIndex((m) => m.role === 'user');
+  const history = firstUserIdx >= 0 ? allPrior.slice(firstUserIdx) : [];
 
   const lastMessage = options.messages[options.messages.length - 1];
 
