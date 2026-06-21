@@ -24,10 +24,7 @@ export async function POST(
   };
   const chatWithUser = [...job.discoveryChat, userMsg];
 
-  const { response, isComplete } = await continueDiscovery(
-    { ...job, discoveryChat: chatWithUser },
-    message
-  );
+  const { response, isComplete } = await continueDiscovery(job, message);
 
   const assistantMsg: ChatMessage = {
     role: 'assistant',
