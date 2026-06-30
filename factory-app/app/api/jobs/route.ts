@@ -7,7 +7,7 @@ import { getVertical } from '@/lib/verticals';
 import { Job, WizardData } from '@/types/factory';
 
 export async function GET() {
-  return Response.json(getJobs());
+  return Response.json(await getJobs());
 }
 
 export async function POST(request: NextRequest) {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     updatedAt: new Date().toISOString(),
   };
 
-  const saved = saveJob(job);
+  const saved = await saveJob(job);
   return Response.json(saved, { status: 201 });
 }
 

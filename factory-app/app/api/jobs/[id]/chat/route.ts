@@ -12,7 +12,7 @@ export async function POST(
   const { id } = await params;
   const { message } = await request.json();
 
-  const job = getJob(id);
+  const job = await getJob(id);
   if (!job) return Response.json({ error: 'Not found' }, { status: 404 });
   if (job.status !== 'discovery')
     return Response.json({ error: 'Job not in discovery stage' }, { status: 400 });
