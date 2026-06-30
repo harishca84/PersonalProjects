@@ -48,5 +48,20 @@ export async function POST(
     return Response.json({ approved: true, nextStatus: 'tech_stack' });
   }
 
+  if (job.status === 'test_review') {
+    await updateJob(id, {
+      status: 'deploying',
+      stages: {
+        ...job.stages,
+        deploy: {
+          ...job.stages.deploy,
+          status: 'running',
+          startedAt: new Date().toISOString(),
+        },
+      },
+    });
+    return Response.json({ approved: true, nextStatus: 'deploying' });
+  }
+
   return Response.json({ error: 'No pending review to approve' }, { status: 400 });
 }

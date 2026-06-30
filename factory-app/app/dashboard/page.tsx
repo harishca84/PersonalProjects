@@ -12,6 +12,9 @@ const STATUS_LABELS: Record<JobStatus, string> = {
   arch_review: 'Awaiting Architecture Approval',
   tech_stack: 'Selecting Tech Stack',
   building: 'Building',
+  testing: 'Code Review',
+  test_review: 'Awaiting Test Approval',
+  deploying: 'Deploying',
   live: 'Live',
   failed: 'Failed',
 };
@@ -24,6 +27,9 @@ const STATUS_COLORS: Record<JobStatus, string> = {
   arch_review: 'bg-amber-500/20 text-amber-400',
   tech_stack: 'bg-purple-500/20 text-purple-400',
   building: 'bg-emerald-500/20 text-emerald-400',
+  testing: 'bg-blue-500/20 text-blue-400',
+  test_review: 'bg-amber-500/20 text-amber-400',
+  deploying: 'bg-purple-500/20 text-purple-400',
   live: 'bg-emerald-500/20 text-emerald-400',
   failed: 'bg-red-500/20 text-red-400',
 };

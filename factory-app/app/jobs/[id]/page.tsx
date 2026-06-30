@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, use } from 'react';
 import Link from 'next/link';
-import { Job, Tier } from '@/types/factory';
+import { Job, Tier, TestResult } from '@/types/factory';
 
 const STAGE_ORDER = ['discovery', 'prd', 'architecture', 'tech_stack', 'build', 'test', 'deploy'];
 
@@ -168,6 +168,35 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
                   : 'Building your platform...'
               }
               buttonLabel="Select Stack & Build"
+              running={running}
+              onRun={runStage}
+            />
+          )}
+
+          {/* Testing */}
+          {job.status === 'testing' && (
+            <AutoRunSection
+              label="Reviewing generated code for issues..."
+              buttonLabel="Run Code Review"
+              running={running}
+              onRun={runStage}
+            />
+          )}
+
+          {/* Test review: critical issues found */}
+          {job.status === 'test_review' && job.testResult && (
+            <TestReviewSection
+              testResult={job.testResult}
+              running={running}
+              onApprove={() => approve({})}
+            />
+          )}
+
+          {/* Deploying */}
+          {job.status === 'deploying' && (
+            <AutoRunSection
+              label="Deploying your platform to Vercel..."
+              buttonLabel="Deploy to Vercel"
               running={running}
               onRun={runStage}
             />
@@ -453,6 +482,66 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function TestReviewSection({
+  testResult,
+  running,
+  onApprove,
+}: {
+  testResult: TestResult;
+  running: boolean;
+  onApprove: () => void;
+}) {
+  return (
+    <div className="p-6">
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h2 className="text-white font-medium text-lg mb-1">Code Review — Issues Found</h2>
+          <p className="text-gray-400 text-sm max-w-xl">{testResult.summary}</p>
+        </div>
+        <button
+          onClick={onApprove}
+          disabled={running}
+          className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ml-4"
+        >
+          {running ? 'Working...' : 'Deploy Anyway'}
+        </button>
+      </div>
+
+      {testResult.criticalIssues.length > 0 && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4">
+          <h3 className="text-xs font-medium text-red-400 uppercase tracking-wider mb-3">
+            Critical Issues
+          </h3>
+          <ul className="space-y-1.5">
+            {testResult.criticalIssues.map((issue, i) => (
+              <li key={i} className="text-sm text-red-300 flex items-start gap-2">
+                <span className="text-red-500 flex-shrink-0 mt-0.5">✕</span>
+                {issue}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {testResult.warnings.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+          <h3 className="text-xs font-medium text-amber-400 uppercase tracking-wider mb-3">
+            Warnings
+          </h3>
+          <ul className="space-y-1.5">
+            {testResult.warnings.map((w, i) => (
+              <li key={i} className="text-sm text-amber-300 flex items-start gap-2">
+                <span className="text-amber-500 flex-shrink-0 mt-0.5">⚠</span>
+                {w}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BuildOutputSection({ output, job }: { output: NonNullable<Job['buildOutput']>; job: Job }) {
   const [activeFile, setActiveFile] = useState(output.files[0]?.path ?? '');
   const activeContent = output.files.find((f) => f.path === activeFile)?.content ?? '';
@@ -466,9 +555,25 @@ function BuildOutputSection({ output, job }: { output: NonNullable<Job['buildOut
           </h2>
           <p className="text-gray-400 text-sm">{output.files.length} files generated</p>
         </div>
-        <span className="bg-emerald-500/20 text-emerald-400 text-sm px-3 py-1 rounded-full font-medium">
-          Live
-        </span>
+        <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+          {job.liveUrl ? (
+            <a
+              href={job.liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm px-4 py-1.5 rounded-lg font-medium transition-colors"
+            >
+              View Live Site ↗
+            </a>
+          ) : (
+            <span className="bg-gray-700 text-gray-400 text-sm px-3 py-1 rounded-full font-medium">
+              No Vercel token — local only
+            </span>
+          )}
+          <span className="bg-emerald-500/20 text-emerald-400 text-sm px-3 py-1 rounded-full font-medium">
+            {job.deployResult?.status === 'live' ? 'Live' : job.deployResult?.status === 'deploying' ? 'Deploying' : 'Built'}
+          </span>
+        </div>
       </div>
 
       {/* Setup instructions */}

@@ -9,22 +9,26 @@ Output format — use this EXACT format for each file, nothing else:
 // full file content here
 ===END===
 
-Generate the most critical files first:
-1. Database schema (SQL)
-2. TypeScript types
-3. Core API routes (orders CRUD)
-4. Main dashboard page
-5. Order creation form
-6. Auth setup
-7. Environment variable example
+REQUIRED files — always generate these first:
+1. package.json (with all dependencies listed — this is MANDATORY for deployment)
+2. next.config.ts
+3. tailwind.config.ts
+4. tsconfig.json
+5. .env.example (document all required env vars)
+6. Database schema (schema.sql)
+7. TypeScript types (types/index.ts)
+8. Core API routes (orders CRUD)
+9. Main dashboard page (app/dashboard/page.tsx)
+10. Order creation form
 
 Rules:
 - Real working code only, no placeholders
 - Multi-tenant: all queries scoped by tenant_id
-- Next.js 16 App Router (params is async Promise)
+- Next.js 15 App Router (params is async Promise)
 - TypeScript throughout
 - Tailwind CSS for styling
-- Supabase for DB/auth unless stack specifies otherwise`;
+- Supabase for DB/auth unless stack specifies otherwise
+- package.json must include: next, react, react-dom, @supabase/supabase-js, typescript, tailwindcss, @types/react, @types/node`;
 
 function parseFiles(raw: string): GeneratedFile[] {
   const files: GeneratedFile[] = [];

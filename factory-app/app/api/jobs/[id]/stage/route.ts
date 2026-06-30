@@ -6,6 +6,8 @@ import { generatePRD } from '@/lib/stages/prd';
 import { generateArchitecture } from '@/lib/stages/architecture';
 import { selectTechStack } from '@/lib/stages/tech-stack';
 import { buildProduct } from '@/lib/stages/build';
+import { reviewCode } from '@/lib/stages/test';
+import { deployToVercel } from '@/lib/stages/deploy';
 
 export async function POST(
   _request: NextRequest,
@@ -74,7 +76,7 @@ export async function POST(
         const buildOutput = await buildProduct(jobWithStack!);
         await updateJob(id, {
           buildOutput,
-          status: 'live',
+          status: 'testing',
           stages: {
             ...jobWithStack!.stages,
             build: {
@@ -82,9 +84,83 @@ export async function POST(
               status: 'completed',
               completedAt: new Date().toISOString(),
             },
+            test: {
+              ...jobWithStack!.stages.test,
+              status: 'running',
+              startedAt: new Date().toISOString(),
+            },
           },
         });
         return Response.json({ stage: 'build', status: 'complete' });
+      }
+
+      case 'testing': {
+        const testResult = await reviewCode(job);
+        if (!testResult.passed && testResult.criticalIssues.length > 0) {
+          await updateJob(id, {
+            testResult,
+            status: 'test_review',
+            stages: {
+              ...job.stages,
+              test: {
+                ...job.stages.test,
+                status: 'awaiting_approval',
+                completedAt: new Date().toISOString(),
+              },
+            },
+          });
+          return Response.json({ stage: 'test', status: 'awaiting_review' });
+        }
+        const jobAfterTest = await updateJob(id, {
+          testResult,
+          status: 'deploying',
+          stages: {
+            ...job.stages,
+            test: {
+              ...job.stages.test,
+              status: 'completed',
+              completedAt: new Date().toISOString(),
+            },
+            deploy: {
+              ...job.stages.deploy,
+              status: 'running',
+              startedAt: new Date().toISOString(),
+            },
+          },
+        });
+        const deployResult = await deployToVercel(jobAfterTest!);
+        await updateJob(id, {
+          deployResult,
+          liveUrl: deployResult.url ?? undefined,
+          status: 'live',
+          stages: {
+            ...jobAfterTest!.stages,
+            deploy: {
+              ...jobAfterTest!.stages.deploy,
+              status: 'completed',
+              completedAt: new Date().toISOString(),
+            },
+          },
+        });
+        return Response.json({ stage: 'deploy', status: 'complete', url: deployResult.url });
+      }
+
+      case 'deploying': {
+        const deployResult = await deployToVercel(job);
+        await updateJob(id, {
+          deployResult,
+          liveUrl: deployResult.url ?? undefined,
+          status: 'live',
+          stages: {
+            ...job.stages,
+            deploy: {
+              ...job.stages.deploy,
+              status: 'completed',
+              completedAt: new Date().toISOString(),
+            },
+          },
+        });
+        return Response.json({ stage: 'deploy', status: 'complete', url: deployResult.url });
       }
 
       default:

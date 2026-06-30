@@ -8,8 +8,12 @@ export type JobStatus =
   | 'arch_review'
   | 'tech_stack'
   | 'building'
+  | 'testing'
+  | 'test_review'
+  | 'deploying'
   | 'live'
   | 'failed';
+
 
 export type StageName =
   | 'discovery'
@@ -82,6 +86,20 @@ export interface BuildOutput {
   envVariables: { key: string; description: string }[];
 }
 
+export interface TestResult {
+  passed: boolean;
+  criticalIssues: string[];
+  warnings: string[];
+  summary: string;
+}
+
+export interface DeployResult {
+  url: string | null;
+  deploymentId: string | null;
+  deployedAt: string;
+  status: 'live' | 'deploying' | 'no_token';
+}
+
 export interface StageState {
   name: string;
   status: StageStatus;
@@ -111,8 +129,11 @@ export interface Job {
   techStack?: TechStack;
 
   buildOutput?: BuildOutput;
+  testResult?: TestResult;
+  deployResult?: DeployResult;
   liveUrl?: string;
 
   createdAt: string;
   updatedAt: string;
 }
+
