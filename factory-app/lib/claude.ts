@@ -5,13 +5,9 @@ export type Model =
   | 'claude-sonnet-4-6'
   | 'claude-haiku-4-5-20251001';
 
-// All Claude model names map to Gemini equivalents:
-// Opus (deep reasoning) → gemini-2.0-flash (best available on free tier)
-// Sonnet (balanced)     → gemini-2.0-flash
-// Haiku (fast/cheap)    → gemini-2.0-flash-lite
-function toGeminiModel(model: Model): string {
-  if (model === 'claude-haiku-4-5-20251001') return 'gemini-2.0-flash-lite';
-  return 'gemini-2.0-flash';
+// All model names map to gemini-2.5-flash (best available with this key's tier)
+function toGeminiModel(_model: Model): string {
+  return 'gemini-2.5-flash';
 }
 
 let _client: GoogleGenerativeAI | null = null;
