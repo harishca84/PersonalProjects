@@ -1,24 +1,24 @@
 # AI Factory
 
-An AI-powered job runner that takes a service business problem and builds a deployed, working SaaS platform for it — automatically.
-
-Submit a job ("I run a dry cleaning shop"), have a discovery conversation, pick a tier (Starter / Standard / Pro), approve the architecture, and the factory generates and deploys the product.
+An AI-powered platform builder for service businesses. Describe a business, run a 4-step wizard, and the factory produces a fully-coded, production-grade SaaS platform — with domain vocabulary, pre-loaded sample data, and the right design theme baked in.
 
 ---
 
 ## What This Is
 
-The factory is the **engine**. The product it builds (a service business management platform) is the **output**.
+The factory is the **engine**. The service business platform it builds is the **product**.
 
 ```
-You describe a business
+You pick a vertical (dry cleaning, shoe repair, tailoring...)
         ↓
-Factory runs a pipeline of AI stages
+4-step wizard: vertical → business details → design theme → review
+        ↓
+Factory auto-runs: PRD → Architecture → Tech Stack → Build → Test → Deploy
         ↓
 A working, deployed SaaS platform appears
 ```
 
-The factory is not a generic code generator. It understands service businesses specifically — businesses that receive customer items, process them over time, notify customers, and return them (dry cleaning, shoe repair, tailoring, watch repair, auto detailing, etc.).
+The factory is not a generic code generator. It understands the language of each business type. A dry cleaner's platform uses "tickets" and "garments". A tailor's platform uses "alterations" and "clients". The sample data arrives pre-loaded. The correct workflow stages are wired in from day one.
 
 ---
 
@@ -26,97 +26,93 @@ The factory is not a generic code generator. It understands service businesses s
 
 ```
 ┌─────────────────────────────────────────────┐
-│  AI FACTORY (this app)                      │
-│  Internal engine, operator-facing           │
-│  Runs on the operator's machine             │
+│  AI FACTORY (this repo)                     │
+│  Internal engine — operator-facing          │
+│  Hosted on your own server (Mac mini)       │
 └──────────────────────┬──────────────────────┘
                        │ produces
                        ▼
 ┌─────────────────────────────────────────────┐
 │  SERVICE BUSINESS PLATFORM (the output)     │
-│  Multi-tenant SaaS                          │
-│  Sold to SMBs (dry cleaners, tailors, etc.) │
+│  Multi-tenant SaaS sold to SMBs             │
+│  Dry cleaners, tailors, shoe repairers...   │
 │  Business brand front, platform brand subtle│
 └─────────────────────────────────────────────┘
 ```
 
 ---
 
+## Supported Verticals
+
+| Vertical | Domain Term | Workflow Stages | Sample Services |
+|---|---|---|---|
+| 🧺 Dry Cleaning | "ticket" / "garment" | Received → Spotting → Cleaning → Pressing → Ready | Shirts, suits, dresses |
+| 👟 Shoe Repair | "job" / "pair" | Received → Assessment → In Repair → Quality Check → Ready | Heel replacement, sole repair |
+| ✂️ Tailoring & Alterations | "alteration" / "garment" | Fitting → Pinned & Ready → Sewing → Final Press → Ready | Hemming, zipper, resize |
+| ⌚ Watch & Jewelry Repair | "repair order" / "piece" | Received → Diagnosis → Quote Sent → In Repair → Testing → Ready | Battery, strap, mechanism |
+| 🚗 Auto Detailing | "detail job" / "vehicle" | Booked → Vehicle Arrived → Wash → Interior Detail → Final Polish → Ready | Full detail, ceramic coat |
+
+Each vertical includes pre-configured:
+- Domain vocabulary used throughout the generated UI and code
+- Workflow stages wired into the platform
+- Sample customers (with names, phones, emails)
+- Default services with base pricing
+- Known pain points used to shape the PRD
+
+---
+
+## Design Themes
+
+| Theme | Palette | Best For |
+|---|---|---|
+| Dark Professional | Black, gray, emerald | Counter staff — easy on eyes for long shifts |
+| Light & Clean | White, slate, blue | Well-lit shop fronts and offices |
+| Warm & Earthy | Cream, brown, amber | Neighbourhood shops and boutiques |
+| Modern Minimal | White, black, red | Bold, zero-clutter aesthetic |
+
+---
+
 ## Pipeline Stages
 
-| # | Stage | What Happens | Model | Human Checkpoint? |
-|---|---|---|---|---|
-| 1 | **Discovery** | Conversational interview with the business owner | claude-sonnet-4-6 | No — conversational |
-| 2 | **PRD** | Generates Starter / Standard / Pro feature breakdown | claude-opus-4-8 | YES — owner picks tier |
-| 3 | **Architecture** | System design: components, data models, API shape | claude-opus-4-8 | YES — approve or adjust |
-| 4 | **Tech Stack** | Factory selects the best-fit stack for this product | claude-sonnet-4-6 | Only if ambiguous |
-| 5 | **Build** | Generates all code files, committed to GitHub | claude-sonnet-4-6 | No — automated |
-| 6 | **Test** | Writes and runs automated tests | claude-sonnet-4-6 | Only if tests fail |
-| 7 | **Deploy** | Pushes to cloud, produces live URL | deployment MCP | No — automated |
-| 8 | **Monitor** | Health checks, usage summaries, anomaly detection | claude-haiku-4-5 | As needed |
-| 9 | **Evolve** | Proposes feature improvements from usage data | claude-opus-4-8 | YES — all evolutions |
+The factory runs automatically after wizard submission. Human checkpoints are marked:
 
----
+| # | Stage | What Happens | Human? |
+|---|---|---|---|
+| 1 | **PRD** | Generates Starter / Standard / Pro feature breakdown using vertical knowledge | ✅ Pick tier |
+| 2 | **Architecture** | System design: data models, API shape, integrations | ✅ Approve |
+| 3 | **Tech Stack** | Factory selects the best-fit stack for the product | Auto |
+| 4 | **Build** | Generates all code files with domain vocabulary + sample data + theme | Auto |
+| 5 | **Test** | Reviews generated code for critical issues | ✅ Only if issues found |
+| 6 | **Deploy** | Pushes to Vercel, produces live URL | Auto |
 
-## Service Business Platform: What Gets Built
+### 3 Tiers (Generated per Job)
 
-Every product the factory produces is a **multi-tenant SaaS** with:
-- Order/ticket management with configurable workflow stages
-- Customer database
-- Configurable item types and pricing
-- SMS/WhatsApp customer notifications
-- Analytics dashboard
-- Staff management
-- Multi-channel UI (web, tablet, WhatsApp, mobile)
-
-### 3 Tiers
-
-| Tier | Features | Target |
+| Tier | Typical Price | Scope |
 |---|---|---|
-| Starter | Order management + basic pricing/invoicing | "Get off paper" |
-| Standard | + SMS notifications + analytics dashboard | Most popular |
-| Pro | + Advanced analytics + multi-location + WhatsApp + custom branding | Multi-site operators |
-
-### Vertical Configurations
-
-The platform is generic. Each business type gets a configuration:
-
-```json
-{
-  "business_type": "dry_cleaning",
-  "workflow_stages": ["received", "spotting", "cleaning", "pressing", "finishing", "ready", "picked_up"],
-  "item_types": [
-    { "name": "Shirt", "price": 4.50 },
-    { "name": "Suit (2pc)", "price": 18.00 }
-  ],
-  "notification_templates": {
-    "ready": "Hi {name}, your {item_count} item(s) at {business_name} are ready for pickup!"
-  }
-}
-```
-
-Same platform, different config for dry cleaning vs. shoe repair vs. tailoring.
+| Starter | $49–79/mo | Order tracking + basic invoicing. "Get off paper." |
+| Standard | $89–129/mo | + SMS notifications + analytics dashboard |
+| Pro | $149–249/mo | + Advanced analytics + multi-location + custom branding |
 
 ---
 
-## Getting Started
+## Getting Started (Local Dev)
 
 ### Prerequisites
 
 - Node.js 18+
-- Anthropic API key ([get one here](https://console.anthropic.com/settings/keys))
+- Gemini API key — free at [aistudio.google.com](https://aistudio.google.com/app/apikey)
 
 ### Setup
 
 ```bash
-# 1. Install dependencies
+git clone https://github.com/harishca84/personalprojects
+cd personalprojects/factory-app
+git checkout claude/ai-workforce-software-dev-q72s4u
+
 npm install
-
-# 2. Configure environment
 cp .env.local.example .env.local
-# Edit .env.local and add your ANTHROPIC_API_KEY
+# Add your GEMINI_API_KEY to .env.local
 
-# 3. Start the factory
 npm run dev
 ```
 
@@ -124,28 +120,122 @@ Open `http://localhost:3000` — it redirects to the dashboard.
 
 ### Running Your First Job
 
-1. Click **New Job** on the dashboard
-2. Enter the business name and type (e.g., "Joe's Cleaners" / "Dry Cleaning")
-3. Have the discovery conversation — answer the factory's questions as the business owner would
-4. Once discovery is complete, click **Generate PRD**
-5. Review the 3-tier breakdown and pick your tier
-6. Approve the architecture
-7. Factory builds the product
-
-Job state and all stage outputs are stored in `.factory/jobs.json` locally.
+1. Click **+ New Job**
+2. **Step 1** — Pick a vertical (Dry Cleaning, Shoe Repair, etc.)
+3. **Step 2** — Enter business name, owner name, location, staff size, daily volume
+4. **Step 3** — Choose a design theme
+5. **Step 4** — Review the summary and click **Build**
+6. Factory auto-runs — watch the pipeline progress
+7. Pick a tier when the PRD is ready, approve architecture, then watch the build complete
+8. Reveal animation fires when the platform goes live
 
 ---
 
-## Tech Stack (Factory App)
+## Self-Hosting on Mac Mini
 
-| Layer | Technology | Reason |
+The factory is designed to run on your own machine. File-based storage (`.factory/jobs.json`) works fine — it's a persistent process, not serverless.
+
+### 1. Install dependencies on the Mac mini
+
+```bash
+brew install node nginx
+npm install -g pm2
+```
+
+### 2. Clone, configure, and build
+
+```bash
+git clone https://github.com/harishca84/personalprojects
+cd personalprojects/factory-app
+npm install
+npm run build
+echo "GEMINI_API_KEY=your-key-here" > .env.local
+```
+
+### 3. Start with PM2 (auto-restart on reboot)
+
+```bash
+pm2 start npm --name "factory" -- start
+pm2 save && pm2 startup
+```
+
+### 4. Nginx reverse proxy
+
+Edit `/opt/homebrew/etc/nginx/nginx.conf`, replace the `server { }` block:
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com www.yourdomain.com;
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```bash
+brew services start nginx
+```
+
+### 5. Free SSL certificate
+
+```bash
+brew install certbot
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+```
+
+### 6. Point your domain
+
+**Option A — Direct IP** (requires static home IP + router port forwarding on 80/443):
+- Domain registrar → DNS → `A` record → your home public IP
+
+**Option B — Cloudflare Tunnel** (recommended — no port forwarding, survives IP changes):
+
+```bash
+brew install cloudflared
+cloudflared tunnel login
+cloudflared tunnel create factory
+cloudflared tunnel route dns factory yourdomain.com
+pm2 start "cloudflared tunnel run --url http://localhost:3000 factory" --name tunnel
+pm2 save
+```
+
+---
+
+## Switching to PostgreSQL (When Mac Mini Arrives)
+
+The factory auto-detects `DATABASE_URL`. Without it, uses file storage. With it, uses PostgreSQL. No code changes needed.
+
+### Setup
+
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+createdb factory
+psql -d factory -f schema.sql
+```
+
+Add to `.env.local`:
+```
+DATABASE_URL=postgresql://postgres@localhost:5432/factory
+```
+
+Restart the app — it switches automatically.
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
 |---|---|---|
-| Framework | Next.js 16 (App Router) | Single codebase, minimal ops overhead |
-| Language | TypeScript | Type safety across pipeline stages |
-| AI | Anthropic API (`@anthropic-ai/sdk`) | Claude models for all stages |
-| Storage | File-based (`.factory/jobs.json`) | Zero setup, easy to inspect |
-| Styling | Tailwind CSS | Rapid UI iteration |
-| Deployment | Vercel (recommended) | Zero-config Next.js deployment |
+| `GEMINI_API_KEY` | Yes | From [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| `DATABASE_URL` | No | PostgreSQL connection string. Omit to use file storage. |
+| `VERCEL_TOKEN` | No | For auto-deploying generated platforms to Vercel. |
 
 ---
 
@@ -154,49 +244,50 @@ Job state and all stage outputs are stored in `.factory/jobs.json` locally.
 ```
 factory-app/
 ├── app/
-│   ├── api/
-│   │   └── jobs/
-│   │       ├── route.ts              # GET list, POST create job
-│   │       └── [id]/
-│   │           ├── route.ts          # GET single job
-│   │           ├── chat/route.ts     # POST discovery message
-│   │           ├── stage/route.ts    # POST trigger next pipeline stage
-│   │           └── approve/route.ts  # POST HITL approval
-│   ├── dashboard/page.tsx            # Job list
-│   ├── jobs/
-│   │   ├── new/page.tsx              # Job creation form
-│   │   └── [id]/page.tsx            # Job detail + pipeline view
-│   └── layout.tsx
+│   ├── api/jobs/
+│   │   ├── route.ts              # GET list, POST create job
+│   │   └── [id]/
+│   │       ├── route.ts          # GET single job
+│   │       ├── chat/route.ts     # POST discovery message
+│   │       ├── stage/route.ts    # POST trigger next pipeline stage
+│   │       └── approve/route.ts  # POST HITL approval
+│   ├── dashboard/page.tsx        # Job list
+│   └── jobs/
+│       ├── new/page.tsx          # 4-step wizard
+│       └── [id]/page.tsx         # Job detail + pipeline view
 ├── lib/
-│   ├── claude.ts                     # Anthropic API wrapper (model selection)
-│   ├── db.ts                         # File-based job storage
+│   ├── claude.ts                 # Gemini API wrapper
+│   ├── db.ts                     # Auto-selects file or PostgreSQL
+│   ├── verticals.ts              # 5 vertical configurations
+│   ├── themes.ts                 # 4 design themes
 │   └── stages/
-│       ├── discovery.ts              # Discovery conversation + summary
-│       ├── prd.ts                    # PRD generation (3 tiers)
-│       ├── architecture.ts           # System design generation
-│       ├── tech-stack.ts             # Tech stack selection
-│       └── build.ts                  # Code generation
-├── types/
-│   └── factory.ts                    # All TypeScript types
-└── .factory/
-    └── jobs.json                     # Runtime job state (auto-created)
+│       ├── discovery.ts          # Discovery conversation
+│       ├── prd.ts                # PRD generation (3 tiers)
+│       ├── architecture.ts       # System design
+│       ├── tech-stack.ts         # Stack selection
+│       ├── build.ts              # Code generation
+│       ├── test.ts               # Code review
+│       └── deploy.ts             # Vercel deployment
+├── types/factory.ts              # All TypeScript types
+├── schema.sql                    # PostgreSQL schema (run once on Mac mini)
+└── .factory/jobs.json            # Runtime job state (auto-created, file mode only)
 ```
 
 ---
 
 ## Key Design Decisions
 
-All decisions below were made deliberately and documented. Re-open only with clear reason.
-
 | Decision | Choice | Reason |
 |---|---|---|
-| Factory access model | Internal only — operator runs it for clients | Agency model; quality = operator's product quality |
-| Platform architecture | Multi-tenant SaaS | Single codebase, row-level tenant isolation |
-| New vertical growth | AI proposes + human approves + auto-learns from usage | Knowledge compounds with every onboarded business |
-| Product tech stack | Factory decides per job | No hardcoded stack; products can vary |
-| Factory storage | File-based JSON | Zero friction, easy to debug, no DB setup |
-| Model assignment | Opus for PRD/Architecture/Evolve; Sonnet for rest; Haiku for Monitor | Depth where it matters, cost control everywhere else |
-| Branding | Business name front, platform name subtle | "Joe's Dry Cleaning, powered by [Platform]" |
+| Target market | SMBs — dry cleaners, tailors, shoe repairers | Can't afford custom software; massive underserved market |
+| Factory access | Internal only — operator runs for clients | Agency model; factory quality = operator's reputation |
+| AI backend | Google Gemini (`gemini-2.5-flash`) | Free tier available; same API surface regardless of model |
+| Storage | File-based dev → PostgreSQL prod | Zero friction locally; proper DB when self-hosted |
+| Hosting | Self-hosted on Mac mini | Full ownership, no ongoing cloud costs, custom domain |
+| Domain vocab | Injected per vertical into every AI prompt | Generated code uses "tickets" not "orders" for dry cleaners |
+| Sample data | Pre-loaded per vertical in seed.sql | Platforms arrive with real-looking data, not blank screens |
+| Themes | 4 pre-built, injected into build prompt | Visual differentiation without post-generation styling work |
+| Pipeline | Auto-runs after wizard; human pauses at PRD + Architecture | Reduces friction without removing oversight |
 
 ---
 
@@ -204,18 +295,29 @@ All decisions below were made deliberately and documented. Re-open only with cle
 
 | Date | Event |
 |---|---|
-| 2026-06-20 | Factory app built and committed (`599b8bf`) |
-| 2026-06-21 | Fixed missing `types/factory.ts` — root cause of "page not found" error (`7704b42`) |
-| 2026-06-21 | App confirmed running and returning 200 on `/dashboard` |
+| 2026-06-20 | Factory app created and first commit pushed |
+| 2026-06-21 | Fixed missing `types/factory.ts` — root cause of "page not found" |
+| 2026-06-21 | Switched AI from Anthropic to Google Gemini (free tier) |
+| 2026-06-21 | Fixed Gemini history constraint (must start with `user` role) |
+| 2026-06-21 | Fixed discovery agent repeating questions |
+| 2026-06-30 | Added Test + Deploy pipeline stages |
+| 2026-06-30 | Added 5 vertical configurations (`lib/verticals.ts`) |
+| 2026-06-30 | Added 4 design themes (`lib/themes.ts`) |
+| 2026-06-30 | Rewrote job creation as 4-step wizard |
+| 2026-06-30 | Added auto-run pipeline (wizard jobs skip manual triggers) |
+| 2026-06-30 | Added reveal animation + setup checklist on job completion |
+| 2026-06-30 | Fixed: `gemini-2.0-flash` deprecated on free tier → switched to `gemini-2.5-flash` |
+| 2026-06-30 | Added PostgreSQL support with file-based fallback (`DATABASE_URL` auto-detect) |
+| 2026-06-30 | Added Mac mini self-hosting guide (Nginx + PM2 + Certbot + Cloudflare Tunnel) |
 
 ---
 
 ## Roadmap
 
-- [ ] Test stage (automated test generation + execution)
-- [ ] Deploy stage (Vercel MCP integration, live URL output)
-- [ ] Monitor stage (health checks, error rate tracking)
-- [ ] Evolve stage (usage-driven feature proposals)
-- [ ] Vertical config system (templates for known business types)
-- [ ] First factory run: dry cleaning platform end-to-end
-- [ ] Living Product: proactive suggestions from usage data
+- [ ] Monitor stage — health checks, error rate tracking, usage summaries
+- [ ] Evolve stage — usage-driven feature proposals, AI-suggested improvements
+- [ ] Vertical config system — auto-learn templates from completed jobs
+- [ ] Voice discovery — mic input for business owners who prefer talking
+- [ ] Live build feed — stream code generation progress in real time
+- [ ] Change request flow — post-deploy iterative editing ("add a rush service")
+- [ ] Weekly automation digest — "your platform worked while you slept"
