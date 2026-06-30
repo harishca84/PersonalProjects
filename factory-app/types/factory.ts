@@ -86,6 +86,15 @@ export interface BuildOutput {
   envVariables: { key: string; description: string }[];
 }
 
+export interface WizardData {
+  vertical: string;
+  theme: string;
+  staffCount: string;
+  dailyVolume: string;
+  location: string;
+  specialNotes: string;
+}
+
 export interface TestResult {
   passed: boolean;
   criticalIssues: string[];
@@ -132,6 +141,9 @@ export interface Job {
   testResult?: TestResult;
   deployResult?: DeployResult;
   liveUrl?: string;
+
+  wizardData?: WizardData;
+  autoRun?: boolean;
 
   createdAt: string;
   updatedAt: string;
