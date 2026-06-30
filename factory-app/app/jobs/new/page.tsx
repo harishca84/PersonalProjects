@@ -105,14 +105,17 @@ export default function NewJobPage() {
                 <button
                   key={v.id}
                   onClick={() => setForm({ ...form, vertical: v.id })}
-                  className={`text-left p-4 rounded-xl border transition-all ${form.vertical === v.id ? 'border-emerald-500 bg-emerald-500/10' : 'border-gray-700 bg-gray-900 hover:border-gray-600'}`}
+                  className={`relative text-left p-4 rounded-xl border-2 transition-all ${form.vertical === v.id ? 'border-emerald-500 bg-emerald-950 shadow-lg shadow-emerald-900/30' : 'border-gray-700 bg-gray-900 hover:border-gray-500'}`}
                 >
+                  {form.vertical === v.id && (
+                    <span className="absolute top-3 right-3 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">✓</span>
+                  )}
                   <div className="text-2xl mb-2">{v.emoji}</div>
-                  <div className="text-white font-medium text-sm mb-0.5">{v.name}</div>
+                  <div className={`font-medium text-sm mb-0.5 ${form.vertical === v.id ? 'text-emerald-300' : 'text-white'}`}>{v.name}</div>
                   <div className="text-gray-500 text-xs">{v.tagline}</div>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {v.workflowStages.slice(0, 3).map((s) => (
-                      <span key={s.id} className="text-xs text-gray-600 bg-gray-800 px-1.5 py-0.5 rounded">{s.label}</span>
+                      <span key={s.id} className={`text-xs px-1.5 py-0.5 rounded ${form.vertical === v.id ? 'text-emerald-400 bg-emerald-900/60' : 'text-gray-600 bg-gray-800'}`}>{s.label}</span>
                     ))}
                     {v.workflowStages.length > 3 && <span className="text-xs text-gray-700">+{v.workflowStages.length - 3}</span>}
                   </div>

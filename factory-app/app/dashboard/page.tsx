@@ -44,7 +44,8 @@ export default function DashboardPage() {
       .then((data) => {
         setJobs(Array.isArray(data) ? data : []);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   return (
